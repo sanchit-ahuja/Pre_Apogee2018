@@ -2,13 +2,15 @@
 from __future__ import unicode_literals
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login as django_login
-from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from . models import Question, Question_Choice, User_Choice
 import functions
+from django.contrib.auth import authenticate,login,logout
+from .forms import LoginForm
+from django.http import HttpResponse, HttpResponseRedirect,HttpRequest
+
 # Create your views here.
 def primary(request):
     #Return Home Page if user is logged in, otherwise Login Page
@@ -17,48 +19,28 @@ def primary(request):
     else:
         return redirect('quiz:login')
 
-def signup(request):
-    #Render Sign-Up Page
-    if request.method == 'GET':
-        return render(request, 'quiz/signup.html')
-
-    #Sign-Up User
-    elif request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
-        password = request.POST['password']
-        password_re = request.POST['password_re']
-
-        #Check for Null values and special characters
-        if username.isalnum() and password.isalnum():
-            if password == password_re:
-                user = User(username = username, email = email)
-                user.set_password(password)
-                user.save()
-                redirect('quiz:login')
+def login2(request):
+    if request.method=='POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password')
+            user = authenticate(username=username, password=raw_password)
+            print("User: {}".format(user))
+            if user:
+                login(request, user)
+                return redirect('quiz:home')
             else:
-                messages.error(request, "Your passwords don't match!")
-                return redirect('quiz:signup')
-        else:
-            messages.error(request, "Please fill all the details properly!")
-            redirect('quiz:siqnup')
+                return HttpResponse("Wrong Login Creds")
+    else:
+        form = LoginForm()
+    return render(request, 'quiz/login.html', {'form': form})
 
-def login(request):
-    #Render Login Page
-    if request.method == 'GET':
-        return render(request, 'quiz/login.html')
 
-    #Login User
-    elif request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-        my_user = authenticate(username = username, password = password)
-        if my_user is not None:
-            django_login(request, user)
-            redirect('blog:home')
-        else:
-            messages.error(request, "Incorrect username/password. Try Again!")
-            redirect('blog:login')
+# Hidden View for logging out
+def logout2(request):
+    logout(request)
+    return redirect('quiz:login')
 
 @login_required
 def home(request):
@@ -82,7 +64,7 @@ def question(request, question_order_no):
         #Redirect to next question or Result if quiz has ended
         try:
             next_question =  Question.objects.get(pk = user_choice.question.order_no + 1)
-            return redirect('blog:question', question_order_no = next_question.order_no)
+            return redirect('quiz:question', question_order_no = next_question.order_no)
         except Question.DoesNotExist:
             return redirect('quiz:result')
 
