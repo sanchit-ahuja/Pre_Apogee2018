@@ -1,0 +1,12 @@
+session of 30 mins and then terminate the program
+Time stops when logged out
+Logs out the user when tab closes
+Leaderboard refreshes whenever tab is refreshed
+email: thanking to join the quiz
+
+materialize/css
+change database to mysql
+
+Important features:
+  Home Page: Option for Start if haven't started the quiz yet, otherwise continue
+  
